@@ -4,27 +4,36 @@ export class Player {
     this.y = y;
     this.width = 32;
     this.height = 32;
-    this.baseColor = "red";
+    this.baseColor = "green";
     this.color = this.baseColor;
 
     this.velX = 0;
     this.velY = 0;
 
+    this.maxX = 800; // Assuming a fixed width for the canvas
+
     this.speed = 2.5;
     this.jumpStrength = -8;
     this.gravity = 0.4;
     this.onGround = false;
+    this.onWall = false;
 
     this.dashAvailable = true;
     this.dashing = false;
     this.dashTime = 0;
-    this.dashDuration = 200; // milliseconds
+    this.dashDuration = 150; // milliseconds
     this.dashSpeed = 8;
     this.dashDir = 0;
+
+    this.invincible = false;
 
     this.canJump = false;
 
     this.wallTouchDir = 0; 
+
+    this.wallJumpTime = 0;
+    this.wallJumpCooldown = 150; // ms
+
   }
 
   touchingGround() {
@@ -32,13 +41,15 @@ export class Player {
     this.onGround = true;
     this.canJump = true;
     this.dashAvailable = true;
+    this.invincible = false; // reset invincibility
     this.dashing = false;
     this.color = this.baseColor;
   }
 
-    touchingWall(dir) {
+  touchingWall(dir) {
     this.velX = 0;
-    if (this.velY > 1) this.velY = 1;
+    this.onWall = true;
+    if (this.velY > 0.6) this.velY = 0.6;
     this.canJump = true;
     this.wallTouchDir = dir; // -1 if touching left wall, 1 if right
     }
@@ -49,9 +60,10 @@ export class Player {
     this.dashTime = performance.now();
     this.dashDir = direction;
     this.color = "blue";
+    this.invincible = true; // make player invincible during dash
   }
 
-  update(keys, canvasHeight) {
+  update(keys, justPressed, canvasHeight) {
     const now = performance.now();
 
     // Dash logic
@@ -62,33 +74,50 @@ export class Player {
 
       if (now - this.dashTime >= this.dashDuration) {
         this.dashing = false;
+        this.invincible = false; // reset invincibility
         this.color = this.baseColor;
       }
     } else {
 
-      if (!this.onGround) {
+      if (!this.onGround && !this.onWall) {
         this.canJump = false; // prevent midair jumping
         }
-      this.wallTouchDir = 0; // reset wall contact by default
 
       // Horizontal movement
-      if (keys["ArrowLeft"] || keys["KeyA"]) this.velX = -this.speed;
-      else if (keys["ArrowRight"] || keys["KeyD"]) this.velX = this.speed;
-      else this.velX = 0;
+        const now = performance.now();
+
+        const allowHorizontalInput = now - this.wallJumpTime > this.wallJumpCooldown;
+
+        if (allowHorizontalInput) {
+        if (keys["ArrowLeft"] || keys["KeyA"]) this.velX = -this.speed;
+        else if (keys["ArrowRight"] || keys["KeyD"]) this.velX = this.speed;
+        else this.velX = 0;
+        }
+
 
       // Jump
-        if ((keys["Space"] || keys["KeyW"]) && this.canJump) {
-        this.velY = this.jumpStrength;
-        if (this.wallTouchDir !== 0) {
-            this.velX = -this.wallTouchDir * (this.speed * 1.5); // push away from wall
+        if ((justPressed["Space"] || justPressed["KeyW"]) && this.canJump) {
+            this.velY = this.jumpStrength;
+
+            if (this.wallTouchDir !== 0 && !this.onGround) {
+                this.velX = this.wallTouchDir * (this.speed * 1.5); // push away
+                this.wallJumpTime = performance.now();
+            }
+
+            this.canJump = false;
+            this.wallTouchDir = 0;
         }
-        this.canJump = false;
-        this.wallTouchDir = 0;
-        }
+
 
       // Dash input
       if ((keys["KeyQ"] || keys["ShiftLeft"]) && this.dashAvailable) {
-        const dir = keys["ArrowLeft"] || keys["KeyA"] ? -1 : 1;
+        var dir = 0;
+        if(this.wallTouchDir === 0) {
+            dir = keys["ArrowLeft"] || keys["KeyA"] ? -1 : 1;
+        }
+        else{
+            dir = this.wallTouchDir;
+        }
         this.startDash(dir);
       }
 
@@ -96,6 +125,7 @@ export class Player {
       this.velY += this.gravity;
       if (this.velY > 3.5) this.velY = 3.5; // Limit falling speed
       if (this.velY < -8) this.velY = -8; // Limit jumping speed
+
     }
 
     // Update position
@@ -107,6 +137,21 @@ export class Player {
       this.touchingGround();
       this.y = canvasHeight - this.height;
     }
+
+    // canvas bounds collision
+    if (this.x + this.width > this.maxX) {
+    this.x = this.maxX - this.width;
+    this.velX = 0;
+    } else if (this.x < 0) {
+    this.x = 0;
+    this.velX = 0;
+    }
+
+    //reset touching states
+    this.wallTouchDir = 0;
+    this.onWall = false;
+    this.onGround = false;
+
   }
 
   draw(ctx) {
