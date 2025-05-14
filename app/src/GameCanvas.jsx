@@ -1,44 +1,30 @@
 // src/GameCanvas.jsx
 import { useEffect, useRef, useState } from "react";
-import { Player } from "./gameParts/Player";
-import { Block } from "./gameParts/Block";
-import { Trap } from "./gameParts/Trap";
-import { Goal } from "./gameParts/Goal";
+import { loadLevel } from "./gameParts/LevelLoader"; // Import the new loadLevel function
 import { isColliding } from "./gameParts/Collision";
 
 export default function GameCanvas({ levelId }) {
   const canvasRef = useRef(null);
-  const player = useRef(null);
-  const blocks = useRef([]);
-  const traps = useRef([]);
-  const goal = useRef(null);
+  const [level, setLevel] = useState(null);
+  const [loaded, setLoaded] = useState(false);
 
   const keys = useRef({});
   const justPressed = useRef({});
-  const [loaded, setLoaded] = useState(false);
+  const startPos = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const fetchLevel = async () => {
       const res = await fetch(`http://localhost:3000/api/levels/${levelId}`);
       const data = await res.json();
 
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d");
-      const width = 800;
-      const height = 400;
-      canvas.width = width;
-      canvas.height = height;
+      // Use loadLevel to parse the data and set up game objects
+      const loadedLevel = loadLevel(data);
+      setLevel(loadedLevel);
 
-      player.current = new Player(data.playerStart.x, data.playerStart.y);
-      goal.current = new Goal(data.goal.x, data.goal.y);
-
-      blocks.current = data.blocks.map(
-        (b) => new Block(b.x, b.y, b.width, b.height)
-      );
-
-      traps.current = data.traps.map(
-        (t) => new Trap(t.x, t.y, t.width, t.height)
-      );
+      startPos.current = {
+        x: data.playerStart.x,
+        y: data.playerStart.y
+      };
 
       setLoaded(true);
     };
@@ -47,10 +33,15 @@ export default function GameCanvas({ levelId }) {
   }, [levelId]);
 
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || !level) return;
 
-    const width = 800;
-    const height = 400;
+    const { width, height } = level;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    // Set the canvas size dynamically
+    canvas.width = width;
+    canvas.height = height;
 
     const handleKeyDown = (e) => {
       if (!keys.current[e.code]) {
@@ -66,17 +57,16 @@ export default function GameCanvas({ levelId }) {
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
 
-    const ctx = canvasRef.current.getContext("2d");
     let animationFrameId;
 
     const loop = () => {
       ctx.clearRect(0, 0, width, height);
 
-      const p = player.current;
+      const p = level.player;
       p.update(keys.current, justPressed.current, height);
 
       // Block collisions
-      for (const block of blocks.current) {
+      for (const block of level.blocks) {
         if (isColliding(p, block)) {
           const prevBottom = p.y + p.height - p.velY;
           const prevTop = p.y - p.velY;
@@ -102,29 +92,29 @@ export default function GameCanvas({ levelId }) {
       }
 
       // Trap collisions
-      for (const trap of traps.current) {
+      for (const trap of level.traps) {
         if (trap.collidesWith(p) && !p.invincible) {
-          p.x = 100;
-          p.y = height - 100;
+          p.x = startPos.current.x;
+          p.y = startPos.current.y;
           p.velX = 0;
           p.velY = 0;
         }
       }
 
       // Goal collision
-      if (goal.current.collidesWith(p)) {
+      if (level.goal.collidesWith(p)) {
         console.log("You win!");
-        p.x = 100;
-        p.y = height - 100;
+        p.x = startPos.current.x;
+        p.y = startPos.current.y;
         p.velX = 0;
         p.velY = 0;
       }
 
-      // Draw
-      blocks.current.forEach((b) => b.draw(ctx));
-      traps.current.forEach((t) => t.draw(ctx));
-      player.current.draw(ctx);
-      goal.current.draw(ctx);
+      // Draw everything
+      level.blocks.forEach((b) => b.draw(ctx));
+      level.traps.forEach((t) => t.draw(ctx));
+      level.player.draw(ctx);
+      level.goal.draw(ctx);
 
       animationFrameId = requestAnimationFrame(loop);
       justPressed.current = {};
@@ -137,7 +127,7 @@ export default function GameCanvas({ levelId }) {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [loaded]);
+  }, [loaded, level]);
 
   return <canvas ref={canvasRef} style={{ border: "1px solid black" }} />;
 }

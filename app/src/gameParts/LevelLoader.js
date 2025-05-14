@@ -4,16 +4,20 @@ import { Block } from "./Block";
 import { Trap } from "./Trap";
 import { Goal } from "./Goal";
 
-export function loadLevel(data, canvasHeight) {
-  const player = new Player(data.playerStart.x, data.playerStart.y);
-  const blocks = data.blocks.map(b => new Block(b.x, b.y, b.width, b.height));
-  const traps = data.traps.map(t => new Trap(t.x, t.y, t.width, t.height));
-  const goal = new Goal(data.goal.x, data.goal.y, data.goal.width, data.goal.height);
+export function loadLevel(data) {
+  const { playerStart, blocks, traps, goal, width, height } = data;
+
+  const player = new Player(playerStart.x, playerStart.y);
+  const levelBlocks = blocks.map(b => new Block(b.x, b.y, b.width, b.height));
+  const levelTraps = traps.map(t => new Trap(t.x, t.y, t.width, t.height));
+  const levelGoal = new Goal(goal.x, goal.y, goal.width, goal.height);
 
   return {
     player,
-    blocks,
-    traps,
-    goal
+    blocks: levelBlocks,
+    traps: levelTraps,
+    goal: levelGoal,
+    width,
+    height
   };
 }
