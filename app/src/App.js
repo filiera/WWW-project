@@ -4,6 +4,7 @@ import { Player } from "./gameParts/Player";
 import { Block } from "./gameParts/Block";
 import { isColliding } from "./gameParts/Collision";
 import { Trap } from "./gameParts/Trap";
+import { Goal } from "./gameParts/Goal";
 
 export default function App() {
   const canvasRef = useRef(null);
@@ -11,6 +12,9 @@ export default function App() {
   const player = useRef(null);
   const blocks = useRef([]);
   const traps = useRef([]);
+  const goal = useRef(null);
+
+
 
 
   const justPressed = useRef({});
@@ -19,12 +23,15 @@ export default function App() {
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
+
     const width = 800;
     const height = 400;
     canvas.width = width;
     canvas.height = height;
 
     player.current = new Player(100, height - 100);
+
+    goal.current = new Goal(600, height - 64); // adjust as needed
 
     // Create walls/floor
     blocks.current = [
@@ -34,6 +41,7 @@ export default function App() {
       new Block (200, 200, 64, 32),
       new Block(200, height - 100, 32, 80), // Wall
       new Block(400, height - 150, 32, 150), // Wall
+      new Block(700, height - 400, 32, 400), // Wall
     ];
 
     // Create traps
@@ -114,13 +122,25 @@ export default function App() {
         }
       }
 
-
       // End trap logic
+
+      // Goal logic
+      if (goal.current.collidesWith(p)) {
+        console.log("You win!");
+        // Reset or advance to next level — for now, just reset player
+        p.x = 100;
+        p.y = height - 100;
+        p.velX = 0;
+        p.velY = 0;
+      }
+
+      // End goal logic
 
       // Draw everything
       blocks.current.forEach((block) => block.draw(ctx));
       traps.current.forEach((trap) => trap.draw(ctx));
       p.draw(ctx);
+      goal.current.draw(ctx);
 
       animationFrameId = requestAnimationFrame(gameLoop);
       justPressed.current = {};
