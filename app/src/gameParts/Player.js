@@ -25,6 +25,9 @@ export class Player {
     this.dashSpeed = 8;
     this.dashDir = 0;
 
+    this.dashDistance = 128; // how far the dash should travel (in pixels)
+    this.dashTraveled = 0;   // how far we have dashed so far
+
     this.invincible = false;
 
     this.canJump = false;
@@ -42,8 +45,8 @@ export class Player {
     this.canJump = true;
     this.dashAvailable = true;
     this.invincible = false; // reset invincibility
-    this.dashing = false;
-    this.color = this.baseColor;
+    //this.dashing = false;
+    //this.color = this.baseColor;
   }
 
   touchingWall(dir) {
@@ -58,24 +61,28 @@ export class Player {
     this.dashing = true;
     this.dashAvailable = false;
     this.dashTime = performance.now();
+    this.dashTraveled = 0; // reset distance traveled
     this.dashDir = direction;
     this.color = "blue";
     this.invincible = true; // make player invincible during dash
   }
 
   update(keys, justPressed, canvasHeight) {
-    const now = performance.now();
 
     // Dash logic
     if (this.dashing) {
-      // Lock movement
-      this.velX = this.dashDir * this.dashSpeed;
-      this.velY = 0; // Ignore gravity
+      this.dashAvailable = false; // Disable dash until the current one is finished
+      const dashStep = this.dashDir * this.dashSpeed;
+      this.velX = dashStep;
+      this.velY = 0; // Ignore gravity while dashing
 
-      if (now - this.dashTime >= this.dashDuration) {
+      this.dashTraveled += Math.abs(dashStep);
+
+      if (this.dashTraveled >= this.dashDistance) {
         this.dashing = false;
-        this.invincible = false; // reset invincibility
+        this.invincible = false;
         this.color = this.baseColor;
+        this.velX = 0;
       }
     } else {
 

@@ -83,6 +83,7 @@ export default function GameCanvas({ levelId }) {
             const horizontalOverlap  = 
             Math.min(p.x + p.width, block.x + block.width) - Math.max(p.x, block.x);
             const overlapThreshold = 3;
+
             if (horizontalOverlap  > overlapThreshold) {
               // Falling down onto block
               p.y = block.y - p.height;
@@ -98,17 +99,16 @@ export default function GameCanvas({ levelId }) {
 
       // --- Horizontal collision resolution ---
       for (const block of level.blocks) {
+        // More aggressive resolution
         if (isColliding(p, block)) {
-          const wasLeft = prevX + p.width <= block.x + EPSILON;
-          const wasRight = prevX >= block.x + block.width - EPSILON;
+          const overlapLeft = p.x + p.width - block.x;
+          const overlapRight = block.x + block.width - p.x;
 
-          if (p.velX > 0 && wasLeft) {
-            // Moving right into block
-            p.x = block.x - p.width;
+          if (overlapLeft < overlapRight) {
+            p.x -= overlapLeft;
             p.touchingWall(-1);
-          } else if (p.velX < 0 && wasRight) {
-            // Moving left into block
-            p.x = block.x + block.width;
+          } else {
+            p.x += overlapRight;
             p.touchingWall(1);
           }
         }
@@ -120,8 +120,6 @@ export default function GameCanvas({ levelId }) {
         if (trap.collidesWith(p) && !p.invincible) {
           p.x = startPos.current.x;
           p.y = startPos.current.y;
-          p.velX = 0;
-          p.velY = 0;
         }
       }
 
@@ -130,8 +128,7 @@ export default function GameCanvas({ levelId }) {
         console.log("You win!");
         p.x = startPos.current.x;
         p.y = startPos.current.y;
-        p.velX = 0;
-        p.velY = 0;
+
       }
 
       // Draw everything

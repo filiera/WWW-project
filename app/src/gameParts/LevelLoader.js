@@ -12,6 +12,8 @@ export function loadLevel(data) {
   const levelTraps = traps.map(t => new Trap(t.x, t.y, t.width, t.height));
   const levelGoal = new Goal(goal.x, goal.y, goal.width, goal.height);
 
+  player.maxX = width; // Set the player's maxX to the level width
+
   return {
     player,
     blocks: levelBlocks,
