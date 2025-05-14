@@ -63,33 +63,57 @@ export default function GameCanvas({ levelId }) {
       ctx.clearRect(0, 0, width, height);
 
       const p = level.player;
+
+      // Save previous position
+      const prevX = p.x;
+      const prevY = p.y;
+
+      // Update the player's position (includes gravity, input, etc)
       p.update(keys.current, justPressed.current, height);
 
-      // Block collisions
+      const EPSILON = 0.1;
+
+      // --- Vertical collision resolution ---
       for (const block of level.blocks) {
         if (isColliding(p, block)) {
-          const prevBottom = p.y + p.height - p.velY;
-          const prevTop = p.y - p.velY;
-          const prevRight = p.x + p.width - p.velX;
-          const prevLeft = p.x - p.velX;
+          const wasAbove = prevY + p.height <= block.y + EPSILON;
+          const wasBelow = prevY >= block.y + block.height - EPSILON;
 
-          if (p.velY > 0 && prevBottom <= block.y) {
-            p.y = block.y - p.height;
-            p.touchingGround();
-          } else if (p.velY < 0 && prevTop >= block.y + block.height) {
+          if (p.velY > 0 && wasAbove) {
+            const horizontalOverlap  = 
+            Math.min(p.x + p.width, block.x + block.width) - Math.max(p.x, block.x);
+            const overlapThreshold = 3;
+            if (horizontalOverlap  > overlapThreshold) {
+              // Falling down onto block
+              p.y = block.y - p.height;
+              p.touchingGround();
+            }
+          } else if (p.velY < 0 && wasBelow) {
+            // Hitting head on block
             p.y = block.y + block.height;
             p.velY = 0;
-          } else {
-            if (p.velX > 0 && prevRight <= block.x) {
-              p.x = block.x - p.width;
-              p.touchingWall(-1);
-            } else if (p.velX < 0 && prevLeft >= block.x + block.width) {
-              p.x = block.x + block.width;
-              p.touchingWall(1);
-            }
           }
         }
       }
+
+      // --- Horizontal collision resolution ---
+      for (const block of level.blocks) {
+        if (isColliding(p, block)) {
+          const wasLeft = prevX + p.width <= block.x + EPSILON;
+          const wasRight = prevX >= block.x + block.width - EPSILON;
+
+          if (p.velX > 0 && wasLeft) {
+            // Moving right into block
+            p.x = block.x - p.width;
+            p.touchingWall(-1);
+          } else if (p.velX < 0 && wasRight) {
+            // Moving left into block
+            p.x = block.x + block.width;
+            p.touchingWall(1);
+          }
+        }
+      }
+
 
       // Trap collisions
       for (const trap of level.traps) {
