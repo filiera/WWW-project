@@ -59,7 +59,21 @@ export default function GameCanvas({ levelId }) {
 
     let animationFrameId;
 
+    let lastFrameTime = performance.now();
+    const fps = 120;
+    const frameDuration = 1000 / fps; // ~33.33 ms
+
+
     const loop = () => {
+
+      const currentTime = performance.now();
+      const deltaTime = currentTime - lastFrameTime;
+      if (deltaTime < frameDuration) {
+        animationFrameId = requestAnimationFrame(loop);
+        return;
+      }
+      lastFrameTime = currentTime;
+
       ctx.clearRect(0, 0, width, height);
 
       const p = level.player;
