@@ -6,8 +6,9 @@ export default function App() {
   const [levelId, setLevelId] = useState(null);
 
   if (levelId) {
-    return <GameCanvas levelId={levelId} />;
+    return <GameCanvas levelId={levelId} onBackToMenu={() => setLevelId(null)} />;
   }
+
 
   return (
     <div style={{
@@ -47,4 +48,5 @@ export default function App() {
     </div>
   );
 }
+
 

@@ -1,12 +1,14 @@
 // src/GameCanvas.jsx
 import { useEffect, useRef, useState } from "react";
-import { loadLevel } from "./gameParts/LevelLoader"; // Import the new loadLevel function
+import { loadLevel } from "./gameParts/LevelLoader";
 import { isColliding } from "./gameParts/Collision";
 
-export default function GameCanvas({ levelId }) {
+export default function GameCanvas({ levelId, onBackToMenu }) {
   const canvasRef = useRef(null);
   const [level, setLevel] = useState(null);
   const [loaded, setLoaded] = useState(false);
+  const [gameState, setGameState] = useState("playing"); // "playing" | "won"
+  const [reloadTrigger, setReloadTrigger] = useState(0);
 
   const keys = useRef({});
   const justPressed = useRef({});
@@ -23,17 +25,18 @@ export default function GameCanvas({ levelId }) {
 
       startPos.current = {
         x: data.playerStart.x,
-        y: data.playerStart.y
+        y: data.playerStart.y,
       };
 
+      setGameState("playing");
       setLoaded(true);
     };
 
     fetchLevel();
-  }, [levelId]);
+  }, [levelId, reloadTrigger]); 
 
   useEffect(() => {
-    if (!loaded || !level) return;
+    if (!loaded || !level || gameState !== "playing") return;
 
     const { width, height } = level;
     const canvas = canvasRef.current;
@@ -58,14 +61,12 @@ export default function GameCanvas({ levelId }) {
     window.addEventListener("keyup", handleKeyUp);
 
     let animationFrameId;
-
     let lastFrameTime = performance.now();
     const fps = 120; //you can adjust this value to change the frame rate
-    const frameDuration = 1000 / fps; // ~33.33 ms
+    const frameDuration = 1000 / fps;
 
 
     const loop = () => {
-
       const currentTime = performance.now();
       const deltaTime = currentTime - lastFrameTime;
       if (deltaTime < frameDuration) {
@@ -77,29 +78,23 @@ export default function GameCanvas({ levelId }) {
       ctx.clearRect(0, 0, width, height);
 
       const p = level.player;
-
-      // Save previous position
-      const prevX = p.x;
+      //const prevX = p.x;
       const prevY = p.y;
-
-      // Update the player's position (includes gravity, input, etc)
       p.update(keys.current, justPressed.current, height);
 
       const EPSILON = 0.1;
 
-      // --- Vertical collision resolution ---
       for (const block of level.blocks) {
         if (isColliding(p, block)) {
           const wasAbove = prevY + p.height <= block.y + EPSILON;
           const wasBelow = prevY >= block.y + block.height - EPSILON;
 
           if (p.velY > 0 && wasAbove) {
-            const horizontalOverlap  = 
-            Math.min(p.x + p.width, block.x + block.width) - Math.max(p.x, block.x);
+            const horizontalOverlap =
+              Math.min(p.x + p.width, block.x + block.width) - Math.max(p.x, block.x);
             const overlapThreshold = 3;
 
-            if (horizontalOverlap  > overlapThreshold) {
-              // Falling down onto block
+            if (horizontalOverlap > overlapThreshold) {
               p.y = block.y - p.height;
               p.touchingGround();
             }
@@ -139,10 +134,8 @@ export default function GameCanvas({ levelId }) {
 
       // Goal collision
       if (level.goal.collidesWith(p)) {
-        console.log("You win!");
-        p.x = startPos.current.x;
-        p.y = startPos.current.y;
-
+        setGameState("won");
+        return;
       }
 
       // Draw everything
@@ -162,7 +155,66 @@ export default function GameCanvas({ levelId }) {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [loaded, level]);
+  }, [loaded, level, gameState]);
 
-  return <canvas ref={canvasRef} style={{ border: "1px solid black" }} />;
+  const handleRetry = () => {
+    setLoaded(false);
+    setLevel(null);
+    setGameState("playing");
+    setReloadTrigger((prev) => prev + 1);
+    keys.current = {};
+    justPressed.current = {};
+  };
+
+  return (
+    <div style={{ position: "relative" }}>
+      <canvas ref={canvasRef} style={{ border: "1px solid black" }} />
+
+      {gameState === "won" && (
+        <div style={{
+          position: "absolute",
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.7)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "sans-serif",
+          zIndex: 10,
+        }}>
+          <div style={{ backgroundColor: "#1f2937", padding: "40px 60px", borderRadius: "16px", textAlign: "center" }}>
+            <h2 style={{ color: "#10b981", fontSize: "2.5rem", marginBottom: "24px" }}>
+             Congratulations! 
+            </h2>
+            <button onClick={handleRetry} style={{
+              backgroundColor: "#3b82f6",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              padding: "12px 24px",
+              fontSize: "1.2rem",
+              cursor: "pointer",
+              marginBottom: "12px"
+            }}>
+              Retry
+            </button>
+            <br />
+            <button onClick={onBackToMenu} style={{
+              backgroundColor: "#ef4444",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              padding: "12px 24px",
+              fontSize: "1.2rem",
+              cursor: "pointer"
+            }}>
+              Back to Menu
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
+
+
