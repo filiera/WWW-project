@@ -37,6 +37,11 @@ export class Player {
     this.wallJumpTime = 0;
     this.wallJumpCooldown = 150; // ms
 
+    this.afterImages = [];
+    this.afterImageDuration = 400; // ms, how long an afterimage lasts
+    this.afterImageInterval = 30;  // ms between afterimages
+    this.lastAfterImageTime = 0;
+
   }
 
   touchingGround() {
@@ -75,6 +80,20 @@ export class Player {
       const dashStep = this.dashDir * this.dashSpeed;
       this.velX = dashStep;
       this.velY = 0; // Ignore gravity while dashing
+
+      const now = performance.now();
+      // Create afterimage every this.afterImageInterval ms
+      if (now - this.lastAfterImageTime > this.afterImageInterval) {
+        this.afterImages.push({
+          x: this.x,
+          y: this.y,
+          opacity: 0.6,
+          time: now,
+        });
+        this.lastAfterImageTime = now;
+      }
+      // Remove old afterimages
+      this.afterImages = this.afterImages.filter(ai => now - ai.time < this.afterImageDuration);   
 
       this.dashTraveled += Math.abs(dashStep);
 
@@ -162,7 +181,19 @@ export class Player {
   }
 
   draw(ctx) {
+    const now = performance.now();
+
+    // Draw afterimages
+    for (const ai of this.afterImages) {
+      const age = now - ai.time;
+      const alpha = ai.opacity * (1 - age / this.afterImageDuration);
+      ctx.fillStyle = `rgba(173, 216, 230, ${alpha})`; // light blue, fading out
+      ctx.fillRect(ai.x, ai.y, this.width, this.height);
+    }
+
+    // Draw player normally
     ctx.fillStyle = this.color;
     ctx.fillRect(this.x, this.y, this.width, this.height);
   }
+
 }
