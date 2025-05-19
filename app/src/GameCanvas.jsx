@@ -7,7 +7,7 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
   const canvasRef = useRef(null);
   const [level, setLevel] = useState(null);
   const [loaded, setLoaded] = useState(false);
-  const [gameState, setGameState] = useState("playing"); // "playing" | "won"
+  const [gameState, setGameState] = useState("playing"); // "playing" | "paused" | "won"
   const [reloadTrigger, setReloadTrigger] = useState(0);
 
   const keys = useRef({});
@@ -35,6 +35,19 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
     fetchLevel();
   }, [levelId, reloadTrigger]); 
 
+
+  useEffect(() => {
+  const handlePauseToggle = (e) => {
+    if (e.code === "Escape") {
+      setGameState((prev) => (prev === "playing" ? "paused" : "playing"));
+    }
+  };
+  window.addEventListener("keydown", handlePauseToggle);
+  return () => {
+    window.removeEventListener("keydown", handlePauseToggle);
+  };
+}, []);
+
   useEffect(() => {
     if (!loaded || !level || gameState !== "playing") return;
 
@@ -45,6 +58,8 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
     // Set the canvas size dynamically
     canvas.width = width;
     canvas.height = height;
+    
+    
 
     const handleKeyDown = (e) => {
       if (!keys.current[e.code]) {
@@ -186,10 +201,7 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
             <h2 style={{ color: "#10b981", fontSize: "2.5rem", marginBottom: "24px" }}>
              Congratulations! 
             </h2>
-            <button onClick={handleRetry} style={{
               backgroundColor: "#3b82f6",
-              color: "white",
-              border: "none",
               borderRadius: "8px",
               padding: "12px 24px",
               fontSize: "1.2rem",
@@ -199,22 +211,67 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
               Retry
             </button>
             <br />
-            <button onClick={onBackToMenu} style={{
-              backgroundColor: "#ef4444",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              padding: "12px 24px",
-              fontSize: "1.2rem",
-              cursor: "pointer"
-            }}>
+            <button
+              onClick={onBackToMenu}
+              style={{ ...buttonStyle, marginTop: "12px", backgroundColor: "#ef4444" }}
+            >
               Back to Menu
             </button>
           </div>
         </div>
       )}
+
+      {gameState === "paused" && (
+      <div
+        style={{
+          position: "absolute",
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.7)",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          color: "white",
+          fontFamily: "sans-serif",
+          zIndex: 10,
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: "#1f2937",
+            padding: "40px 60px",
+            borderRadius: "16px",
+            textAlign: "center",
+          }}
+        >
+          <h2 style={{ fontSize: "2.5rem", marginBottom: "24px" }}>Paused</h2>
+          <button
+            onClick={() => setGameState("playing")}
+            style={buttonStyle}
+          >
+            Resume
+          </button>
+          <button
+            onClick={onBackToMenu}
+            style={{ ...buttonStyle, marginTop: "12px", backgroundColor: "#ef4444" }}
+          >
+            Back to Menu
+          </button>
+        </div>
+      </div>
+    )}
+
     </div>
   );
+
 }
 
-
+const buttonStyle = {
+  padding: "10px 20px",
+  fontSize: "1.2rem",
+  backgroundColor: "#4f46e5",
+  color: "white",
+  border: "none",
+  borderRadius: "8px",
+  cursor: "pointer",
+};
