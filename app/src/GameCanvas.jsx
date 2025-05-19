@@ -14,6 +14,13 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
   const justPressed = useRef({});
   const startPos = useRef({ x: 0, y: 0 });
 
+  const gameStateRef = useRef(gameState);
+
+
+    useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
+
   useEffect(() => {
     const fetchLevel = async () => {
       const res = await fetch(`http://localhost:3000/api/levels/${levelId}`);
@@ -38,8 +45,9 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
 
   useEffect(() => {
   const handlePauseToggle = (e) => {
+    if (gameStateRef.current === "won") return; // Don't allow pausing when the game is won
     if (e.code === "Escape") {
-      setGameState((prev) => (prev === "playing" ? "paused" : "playing"));
+        setGameState((prev) => (prev === "playing" ? "paused" : "playing"));
     }
   };
   window.addEventListener("keydown", handlePauseToggle);
@@ -82,6 +90,10 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
 
 
     const loop = () => {
+      if (gameState !== "playing") {
+        animationFrameId = requestAnimationFrame(loop);
+        return;
+      }
       const currentTime = performance.now();
       const deltaTime = currentTime - lastFrameTime;
       if (deltaTime < frameDuration) {
@@ -170,6 +182,8 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
+
+    
   }, [loaded, level, gameState]);
 
   const handleRetry = () => {
@@ -201,16 +215,9 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
             <h2 style={{ color: "#10b981", fontSize: "2.5rem", marginBottom: "24px" }}>
              Congratulations! 
             </h2>
-              backgroundColor: "#3b82f6",
-              borderRadius: "8px",
-              padding: "12px 24px",
-              fontSize: "1.2rem",
-              cursor: "pointer",
-              marginBottom: "12px"
-            }}>
+            <button onClick={handleRetry} style={{ ...buttonStyle, marginTop: "12px" }}>
               Retry
             </button>
-            <br />
             <button
               onClick={onBackToMenu}
               style={{ ...buttonStyle, marginTop: "12px", backgroundColor: "#ef4444" }}
