@@ -60,7 +60,7 @@ export default function GameCanvas({ levelId }) {
     let animationFrameId;
 
     let lastFrameTime = performance.now();
-    const fps = 120;
+    const fps = 120; //you can adjust this value to change the frame rate
     const frameDuration = 1000 / fps; // ~33.33 ms
 
 

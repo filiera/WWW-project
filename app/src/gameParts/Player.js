@@ -2,8 +2,8 @@ export class Player {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.width = 32;
-    this.height = 32;
+    this.width = 28;
+    this.height = 28;
     this.baseColor = "green";
     this.color = this.baseColor;
 
@@ -44,7 +44,7 @@ export class Player {
     this.onGround = true;
     this.canJump = true;
     this.dashAvailable = true;
-    this.invincible = false; // reset invincibility
+    //this.invincible = false;
     //this.dashing = false;
     //this.color = this.baseColor;
   }
