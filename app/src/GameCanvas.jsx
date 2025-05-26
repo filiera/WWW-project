@@ -13,6 +13,9 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
   const keys = useRef({});
   const justPressed = useRef({});
   const startPos = useRef({ x: 0, y: 0 });
+  // For leaderboard timing
+  const startTime = useRef(null);
+  const endTime = useRef(null);
 
   const gameStateRef = useRef(gameState);
 
@@ -36,6 +39,8 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
       };
 
       setGameState("playing");
+      startTime.current = performance.now();
+      endTime.current = null;
       setLoaded(true);
     };
 
@@ -189,6 +194,8 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
   const handleRetry = () => {
     setLoaded(false);
     setLevel(null);
+    startTime.current = performance.now();
+    endTime.current = null;
     setGameState("playing");
     setReloadTrigger((prev) => prev + 1);
     keys.current = {};
