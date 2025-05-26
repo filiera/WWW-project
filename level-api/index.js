@@ -71,10 +71,6 @@ app.get('/api/levels/1', (req, res) => {
   res.json(levelData); // Return the translated level data, including width and height
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
-
 
 // Leaderboard API
 const LEADERBOARD_DIR = path.join(__dirname, 'leaderboards');
@@ -132,4 +128,9 @@ app.post('/api/leaderboard/:levelId', (req, res) => {
   saveLeaderboard(levelId, top5);
 
   res.json({ success: true, leaderboard: top5 });
+});
+
+
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
 });

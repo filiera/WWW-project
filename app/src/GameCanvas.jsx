@@ -161,11 +161,13 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
         if (trap.collidesWith(p) && !p.invincible) {
           p.x = startPos.current.x;
           p.y = startPos.current.y;
+          startTime.current = performance.now();
         }
       }
 
       // Goal collision
       if (level.goal.collidesWith(p)) {
+        endTime.current = performance.now();
         setGameState("won");
         return;
       }
@@ -222,6 +224,12 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
             <h2 style={{ color: "#10b981", fontSize: "2.5rem", marginBottom: "24px" }}>
              Congratulations! 
             </h2>
+
+              <SubmitScoreForm
+                levelId={levelId}
+                timeMs={Math.round(endTime.current - startTime.current)}
+              />
+
             <button onClick={handleRetry} style={{ ...buttonStyle, marginTop: "12px" }}>
               Retry
             </button>
@@ -289,3 +297,59 @@ const buttonStyle = {
   borderRadius: "8px",
   cursor: "pointer",
 };
+
+
+
+function SubmitScoreForm({ levelId, timeMs }) {
+  const [name, setName] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    try {
+      await fetch(`http://localhost:3000/api/leaderboard/${levelId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerName: name.trim(), timeMs })
+      });
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Score submission failed:", err);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: "16px" }}>
+      {submitted ? (
+        <p style={{ color: "#10b981", fontSize: "1.1rem" }}>
+          Score submitted!
+        </p>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: "8px" }}>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Enter your name"
+              style={{
+                padding: "10px",
+                fontSize: "1rem",
+                borderRadius: "6px",
+                border: "1px solid #ccc",
+                width: "100%",
+                maxWidth: "240px",
+              }}
+              disabled={submitted}
+            />
+          </div>
+          <button type="submit" style={buttonStyle}>
+            Submit Score ({(timeMs / 1000).toFixed(2)}s)
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}

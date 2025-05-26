@@ -1,30 +1,32 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import GameCanvas from "./GameCanvas";
 
 export default function App() {
   const [levelId, setLevelId] = useState(null);
   const [leaderboards, setLeaderboards] = useState({});
-  const startTime = useRef(null);
-  const endTime = useRef(null);
 
-  useEffect(() => {
-    const fetchAllLeaderboards = async () => {
-      const newBoards = {};
-      for (let id = 1; id <= 5; id++) {
-        try {
-          const res = await fetch(`http://localhost:3000/api/leaderboard/${id}`);
-          const data = await res.json();
-          newBoards[id] = data;
-        } catch (err) {
-          console.error(`Failed to fetch leaderboard for level ${id}`, err);
-          newBoards[id] = [];
-        }
+  // Function to fetch all leaderboards
+  const fetchAllLeaderboards = async () => {
+    const newBoards = {};
+    for (let id = 1; id <= 5; id++) {
+      try {
+        const res = await fetch(`http://localhost:3000/api/leaderboard/${id}`);
+        const data = await res.json();
+        newBoards[id] = data;
+      } catch (err) {
+        console.error(`Failed to fetch leaderboard for level ${id}`, err);
+        newBoards[id] = [];
       }
-      setLeaderboards(newBoards);
-    };
+    }
+    setLeaderboards(newBoards);
+  };
 
-    fetchAllLeaderboards();
-  }, []);
+  // Fetch leaderboards initially AND every time we return to main menu (levelId === null)
+  useEffect(() => {
+    if (levelId === null) {
+      fetchAllLeaderboards();
+    }
+  }, [levelId]);
 
   if (levelId) {
     return <GameCanvas levelId={levelId} onBackToMenu={() => setLevelId(null)} />;
