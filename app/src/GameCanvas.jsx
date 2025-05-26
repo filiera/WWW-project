@@ -205,7 +205,10 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
   };
 
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ position: "relative",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center" }}>
       <canvas ref={canvasRef} style={{ border: "1px solid black" }} />
 
       {gameState === "won" && (
