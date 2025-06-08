@@ -161,6 +161,7 @@ export default function GameCanvas({ levelId, onBackToMenu }) {
         if (trap.collidesWith(p) && !p.invincible) {
           p.x = startPos.current.x;
           p.y = startPos.current.y;
+          p.dashAvailable = true; // Reset dash availability
           startTime.current = performance.now();
         }
       }
