@@ -28,9 +28,20 @@ export default function App() {
     }
   }, [levelId]);
 
-  if (levelId) {
-    return <GameCanvas levelId={levelId} onBackToMenu={() => setLevelId(null)} />;
-  }
+if (levelId) {
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      height: "100vh",
+      width: "100vw",
+    }}>
+      <GameCanvas levelId={levelId} onBackToMenu={() => setLevelId(null)} />
+    </div>
+  );
+}
+
 
   return (
     <div style={{
